@@ -95,6 +95,9 @@ jobs:
     # Advisory: lint findings are reported and uploaded but never fail the PR,
     # matching the project's lint { abortOnError = false }.
     continue-on-error: true
+    # Lint can run long on this project; cap it so a slow/hung run does not
+    # consume runner minutes up to GitHub's 6-hour job ceiling.
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
