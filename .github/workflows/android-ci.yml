@@ -84,7 +84,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-report
-          path: app/build/reports/tests/testGithubDebugUnitTest
+          path: |
+            app/build/reports/tests/testGithubDebugUnitTest
+            app/build/test-results/testGithubDebugUnitTest
           if-no-files-found: warn
 
   lint:
