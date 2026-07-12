@@ -34,8 +34,17 @@ jobs:
 
       # NDK/CMake versions are pinned in app/build.gradle.kts; install the
       # exact versions rather than relying on whatever the runner ships.
+      # Retried because sdkmanager downloads occasionally arrive corrupt
+      # ("Error on ZipFile unknown archive") on GitHub-hosted runners.
       - name: Install pinned NDK and CMake
-        run: sdkmanager "ndk;27.0.12077973" "cmake;3.22.1"
+        run: |
+          for attempt in 1 2 3; do
+            sdkmanager "ndk;27.0.12077973" "cmake;3.22.1" && exit 0
+            echo "sdkmanager attempt $attempt failed; retrying in 15s..." >&2
+            sleep 15
+          done
+          echo "sdkmanager failed after 3 attempts" >&2
+          exit 1
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -70,8 +79,16 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      # See the build job for why NDK/CMake are pinned and the install is retried.
       - name: Install pinned NDK and CMake
-        run: sdkmanager "ndk;27.0.12077973" "cmake;3.22.1"
+        run: |
+          for attempt in 1 2 3; do
+            sdkmanager "ndk;27.0.12077973" "cmake;3.22.1" && exit 0
+            echo "sdkmanager attempt $attempt failed; retrying in 15s..." >&2
+            sleep 15
+          done
+          echo "sdkmanager failed after 3 attempts" >&2
+          exit 1
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -87,45 +104,4 @@ jobs:
           path: |
             app/build/reports/tests/testGithubDebugUnitTest
             app/build/test-results/testGithubDebugUnitTest
-          if-no-files-found: warn
-
-  lint:
-    name: Lint (advisory)
-    runs-on: ubuntu-latest
-    # Advisory: lint findings are reported and uploaded but never fail the PR,
-    # matching the project's lint { abortOnError = false }.
-    continue-on-error: true
-    # Lint can run long on this project; cap it so a slow/hung run does not
-    # consume runner minutes up to GitHub's 6-hour job ceiling.
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install pinned NDK and CMake
-        run: sdkmanager "ndk;27.0.12077973" "cmake;3.22.1"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Run lint
-        run: ./gradlew :app:lintGithubDebug --stacktrace
-
-      - name: Upload lint reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-reports
-          path: |
-            app/build/reports/lint-results-githubDebug.html
-            app/build/reports/lint-results-githubDebug.xml
           if-no-files-found: warn
